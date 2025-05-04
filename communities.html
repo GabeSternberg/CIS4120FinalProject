@@ -94,51 +94,91 @@
   </div>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Drag & drop handlers
-      let dragSrc = null;
-      const list = document.getElementById('rankingList');
-      function addDnD(li) {
-        li.addEventListener('dragstart', e => { dragSrc = li; e.dataTransfer.setData('text/html', li.innerHTML); });
-        li.addEventListener('dragover', e => e.preventDefault());
-        li.addEventListener('drop', e => {
-          if (dragSrc !== li) {
-            const tmp = li.innerHTML;
-            li.innerHTML = dragSrc.innerHTML;
-            dragSrc.innerHTML = tmp;
-          }
-          savePrefs();
+      const list    = document.getElementById('rankingList');
+      const saveBtn = document.getElementById('saveBtn');
+    
+      // 1) a function to wire up all li drag & drop
+      function initDnD() {
+        list.querySelectorAll('li').forEach(li => {
+          li.draggable = true;
+          li.removeEventListener('dragstart', onDragStart);
+          li.removeEventListener('dragover',  onDragOver);
+          li.removeEventListener('drop',      onDrop);
+          li.addEventListener('dragstart', onDragStart);
+          li.addEventListener('dragover',  onDragOver);
+          li.addEventListener('drop',      onDrop);
         });
       }
-      list.querySelectorAll('li').forEach(addDnD);
-
-      // Load saved prefs
-      const saved = JSON.parse(localStorage.getItem('preferences')) || {};
-      if (saved.gradYear) document.querySelector(`input[name="gradYear"][value="${saved.gradYear}"]`).checked = true;
-      if (saved.interest) document.querySelector(`input[name="interest"][value="${saved.interest}"]`).checked = true;
-      if (saved.artist) document.querySelector(`input[name="artist"][value="${saved.artist}"]`).checked = true;
-      if (saved.schedule) document.querySelector(`input[name="schedule"][value="${saved.schedule}"]`).checked = true;
-      if (saved.ranking) {
-        const items = saved.ranking.map(text => [...list.children].find(li => li.querySelector('.item-text').textContent === text));
-        list.innerHTML = ''; items.forEach(li => list.appendChild(li));
-        list.querySelectorAll('li').forEach(addDnD);
+    
+      let dragSrc = null;
+      function onDragStart(e) {
+        dragSrc = this;
+        e.dataTransfer.setData('text/html', this.innerHTML);
       }
-
-      // Save preferences
+      function onDragOver(e) {
+        e.preventDefault();
+      }
+      function onDrop(e) {
+        if (dragSrc !== this) {
+          [this.innerHTML, dragSrc.innerHTML] = [dragSrc.innerHTML, this.innerHTML];
+          savePrefs();
+        }
+      }
+    
+      // 2) your save logic, now re‐initializing DnD after saving
       function savePrefs() {
-        const grad = document.querySelector('input[name="gradYear"]:checked').value;
-        const intr = document.querySelector('input[name="interest"]:checked').value;
-        const art  = document.querySelector('input[name="artist"]:checked').value;
-        const sched= document.querySelector('input[name="schedule"]:checked').value;
-        const ranking = [...list.children].map(li => li.querySelector('.item-text').textContent);
-        const prefs = { gradYear: grad, interest: intr, artist: art, schedule: sched, ranking };
-        localStorage.setItem('preferences', JSON.stringify(prefs));
+        const grad    = document.querySelector('input[name="gradYear"]:checked').value;
+        const intr    = document.querySelector('input[name="interest"]:checked').value;
+        const art     = document.querySelector('input[name="artist"]:checked').value;
+        const sched   = document.querySelector('input[name="schedule"]:checked').value;
+        const ranking = [...list.children].map(li =>
+          li.querySelector('.item-text').textContent
+        );
+    
+        localStorage.setItem('preferences',
+          JSON.stringify({ gradYear: grad, interest: intr, artist: art, schedule: sched, ranking })
+        );
+    
+        // **re-bind** drag & drop handlers in case innerHTML changed
+        initDnD();
       }
-
-      document.getElementById('saveBtn').addEventListener('click', () => {
+    
+      // 3) load saved prefs and then wire up DnD
+      (function loadPrefs() {
+        const saved = JSON.parse(localStorage.getItem('preferences') || '{}');
+        if (saved.gradYear)
+          document.querySelector(`input[name="gradYear"][value="${saved.gradYear}"]`).checked = true;
+        if (saved.interest)
+          document.querySelector(`input[name="interest"][value="${saved.interest}"]`).checked = true;
+        if (saved.artist)
+          document.querySelector(`input[name="artist"][value="${saved.artist}"]`).checked = true;
+        if (saved.schedule)
+          document.querySelector(`input[name="schedule"][value="${saved.schedule}"]`).checked = true;
+    
+        if (saved.ranking) {
+          // re-order the <li> nodes
+          const map = saved.ranking.reduce((acc, text) => {
+            const node = [...list.children].find(li =>
+              li.querySelector('.item-text').textContent === text
+            );
+            if (node) acc.push(node);
+            return acc;
+          }, []);
+          if (map.length) {
+            list.innerHTML = '';
+            map.forEach(li => list.appendChild(li));
+          }
+        }
+    
+        initDnD();
+      })();
+    
+      saveBtn.addEventListener('click', () => {
         savePrefs();
-        alert('Preferences saved');
+        alert('Preferences saved!');
       });
     });
-  </script>
+    </script>
+    
 </body>
 </html>
