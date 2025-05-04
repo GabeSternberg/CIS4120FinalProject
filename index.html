@@ -136,6 +136,23 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Profile editing
+
+      // Persist Profile Picture across pages
+      const picEl = document.querySelector('.profile-pic');
+      const UPDATE_BTN = document.getElementById('updatePicBtn');
+      const PIC_KEY    = 'profilePicSrc';
+
+      // on load: if we saved a custom pic, use it
+      const savedPic = localStorage.getItem(PIC_KEY);
+      if (savedPic) picEl.src = savedPic;
+
+      // on click: swap src and save it
+      UPDATE_BTN.addEventListener('click', () => {
+        const newSrc = 'updated.png';
+        picEl.src = newSrc;
+        localStorage.setItem(PIC_KEY, newSrc);
+      });
+
       const editBtn = document.getElementById('editBtn');
       const fields = ['editableName','editableCollege','editableMajor','editableYear','editableDorm']
         .map(id => document.getElementById(id));
