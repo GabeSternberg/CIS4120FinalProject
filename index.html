@@ -189,17 +189,27 @@
         if (!editing) saveProfile();
       });
 
-      // --- 2) Persist profile picture ---
-      const picEl = document.querySelector('.profile-pic');
+      // --- 2) Persist profile picture with toggle ---
+      const picEl     = document.querySelector('.profile-pic');
       const UPDATE_BTN = document.getElementById('updatePicBtn');
-      const PIC_KEY = 'profilePicSrc';
+      const PIC_KEY     = 'profilePicSrc';
+
+      // on load: restore whatever you saved (or leave default)
       const savedPic = localStorage.getItem(PIC_KEY);
-      if (savedPic) picEl.src = savedPic;
+      if (savedPic) {
+        picEl.src = savedPic;
+      }
+
+      // on click: flip between the two filenames
       UPDATE_BTN.addEventListener('click', () => {
-        const newSrc = 'updated.png';
-        picEl.src = newSrc;
-        localStorage.setItem(PIC_KEY, newSrc);
+        // grab the filename from src
+        const current = picEl.getAttribute('src');
+        // decide next; look for 'updated.png' substring
+        const next = current.includes('updated.png') ? 'gabe.png' : 'updated.png';
+        picEl.src = next;
+        localStorage.setItem(PIC_KEY, next);
       });
+
 
       // --- 3) Collapsible sections ---
       document.querySelectorAll('.collapsible-header').forEach(header => {
