@@ -23,7 +23,7 @@
     .ranking-section label { font-size: 18px; font-weight: bold; margin-bottom: 8px; display: block; }
     #rankingList { list-style: none; padding: 0; }
     #rankingList li { font-size: 18px; padding: 10px; margin-bottom: 8px; border: 2px solid #8BA0F6; border-radius: 8px; background-color: #fff; cursor: move; display: flex; justify-content: space-between; }
-    #rankingList li span.drag-handle { font-size: 20px; padding-left: 10px; cursor: move; }
+    .drag-handle { font-size: 20px; padding-left: 10px; cursor: move; }
     .save-btn { font-size: 18px; padding: 10px 20px; background-color: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
     .save-btn:hover { background-color: #218838; }
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; border-top: 1px solid #ddd; display: flex; justify-content: space-around; align-items: center; padding: 10px 20px; }
@@ -77,10 +77,10 @@
         <div class="ranking-section">
           <label>Rank these based off importance of matches (drag to reorder):</label>
           <ul id="rankingList">
-            <li draggable="true"><span class="item-text">Interest similarity</span><span class="drag-handle">≡</span></li>
-            <li draggable="true"><span class="item-text">Artist/music taste similarity</span><span class="drag-handle">≡</span></li>
-            <li draggable="true"><span class="item-text">Schedule similarity</span><span class="drag-handle">≡</span></li>
-            <li draggable="true"><span class="item-text">Graduation year</span><span class="drag-handle">≡</span></li>
+            <li><span class="item-text">Interest similarity</span><span class="drag-handle">≡</span></li>
+            <li><span class="item-text">Artist/music taste similarity</span><span class="drag-handle">≡</span></li>
+            <li><span class="item-text">Schedule similarity</span><span class="drag-handle">≡</span></li>
+            <li><span class="item-text">Graduation year</span><span class="drag-handle">≡</span></li>
           </ul>
         </div>
         <button class="save-btn" id="saveBtn">Save Preferences</button>
@@ -96,11 +96,38 @@
     document.addEventListener('DOMContentLoaded', () => {
       const list    = document.getElementById('rankingList');
       const saveBtn = document.getElementById('saveBtn');
-    
-      // 1) a function to wire up all li drag & drop
+
+      let dragSrc = null;
+
+      function onDragStart(e) {
+        dragSrc = this;
+        e.dataTransfer.effectAllowed = 'move';
+      }
+
+      function onDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }
+
+      function onDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (dragSrc && dragSrc !== this) {
+          const nodes     = Array.from(list.children);
+          const srcIndex  = nodes.indexOf(dragSrc);
+          const tgtIndex  = nodes.indexOf(this);
+          if (srcIndex < tgtIndex) {
+            list.insertBefore(dragSrc, this.nextSibling);
+          } else {
+            list.insertBefore(dragSrc, this);
+          }
+          savePrefs();
+        }
+      }
+
       function initDnD() {
         list.querySelectorAll('li').forEach(li => {
-          li.draggable = true;
+          li.setAttribute('draggable', 'true');
           li.removeEventListener('dragstart', onDragStart);
           li.removeEventListener('dragover',  onDragOver);
           li.removeEventListener('drop',      onDrop);
@@ -109,76 +136,64 @@
           li.addEventListener('drop',      onDrop);
         });
       }
-    
-      let dragSrc = null;
-      function onDragStart(e) {
-        dragSrc = this;
-        e.dataTransfer.setData('text/html', this.innerHTML);
-      }
-      function onDragOver(e) {
-        e.preventDefault();
-      }
-      function onDrop(e) {
-        if (dragSrc !== this) {
-          [this.innerHTML, dragSrc.innerHTML] = [dragSrc.innerHTML, this.innerHTML];
-          savePrefs();
-        }
-      }
-    
-      // 2) your save logic, now re‐initializing DnD after saving
+
       function savePrefs() {
-        const grad    = document.querySelector('input[name="gradYear"]:checked').value;
-        const intr    = document.querySelector('input[name="interest"]:checked').value;
-        const art     = document.querySelector('input[name="artist"]:checked').value;
-        const sched   = document.querySelector('input[name="schedule"]:checked').value;
-        const ranking = [...list.children].map(li =>
+        const grad    = document.querySelector('input[name="gradYear"]:checked')?.value;
+        const intr    = document.querySelector('input[name="interest"]:checked')?.value;
+        const art     = document.querySelector('input[name="artist"]:checked')?.value;
+        const sched   = document.querySelector('input[name="schedule"]:checked')?.value;
+        const ranking = Array.from(list.children).map(li =>
           li.querySelector('.item-text').textContent
         );
-    
-        localStorage.setItem('preferences',
-          JSON.stringify({ gradYear: grad, interest: intr, artist: art, schedule: sched, ranking })
-        );
-    
-        // **re-bind** drag & drop handlers in case innerHTML changed
-        initDnD();
+
+        localStorage.setItem('preferences', JSON.stringify({
+          gradYear: grad,
+          interest: intr,
+          artist: art,
+          schedule: sched,
+          ranking
+        }));
       }
-    
-      // 3) load saved prefs and then wire up DnD
-      (function loadPrefs() {
+
+      function loadPrefs() {
         const saved = JSON.parse(localStorage.getItem('preferences') || '{}');
-        if (saved.gradYear)
-          document.querySelector(`input[name="gradYear"][value="${saved.gradYear}"]`).checked = true;
-        if (saved.interest)
-          document.querySelector(`input[name="interest"][value="${saved.interest}"]`).checked = true;
-        if (saved.artist)
-          document.querySelector(`input[name="artist"][value="${saved.artist}"]`).checked = true;
-        if (saved.schedule)
-          document.querySelector(`input[name="schedule"][value="${saved.schedule}"]`).checked = true;
-    
-        if (saved.ranking) {
-          // re-order the <li> nodes
-          const map = saved.ranking.reduce((acc, text) => {
-            const node = [...list.children].find(li =>
+        if (saved.gradYear) {
+          const el = document.querySelector(`input[name="gradYear"][value="${saved.gradYear}"]`);
+          if (el) el.checked = true;
+        }
+        if (saved.interest) {
+          const el = document.querySelector(`input[name="interest"][value="${saved.interest}"]`);
+          if (el) el.checked = true;
+        }
+        if (saved.artist) {
+          const el = document.querySelector(`input[name="artist"][value="${saved.artist}"]`);
+          if (el) el.checked = true;
+        }
+        if (saved.schedule) {
+          const el = document.querySelector(`input[name="schedule"][value="${saved.schedule}"]`);
+          if (el) el.checked = true;
+        }
+        if (Array.isArray(saved.ranking)) {
+          const reordered = saved.ranking.map(text =>
+            [...list.children].find(li =>
               li.querySelector('.item-text').textContent === text
-            );
-            if (node) acc.push(node);
-            return acc;
-          }, []);
-          if (map.length) {
+            )
+          ).filter(Boolean);
+          if (reordered.length) {
             list.innerHTML = '';
-            map.forEach(li => list.appendChild(li));
+            reordered.forEach(li => list.appendChild(li));
           }
         }
-    
-        initDnD();
-      })();
-    
+      }
+
+      loadPrefs();
+      initDnD();
+
       saveBtn.addEventListener('click', () => {
         savePrefs();
         alert('Preferences saved!');
       });
     });
-    </script>
-    
+  </script>
 </body>
 </html>
