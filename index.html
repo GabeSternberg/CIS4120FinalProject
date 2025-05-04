@@ -65,7 +65,10 @@
     <div class="profile-header"><h1>Your Profile</h1></div>
     <div class="rectangular-box"><div class="inner-box"><div class="profile-info-container">
       <div class="profile-details">
-        <h2><span id="editableName">Gabe Sternberg</span> <img src="edit.png" alt="Edit" id="editBtn" class="edit-icon"></h2>
+        <h2>
+          <span id="editableName">Gabe Sternberg</span>
+          <img src="edit.png" alt="Edit" id="editBtn" class="edit-icon">
+        </h2>
         <p id="editableCollege">College: UPenn</p>
         <p id="editableMajor">Major(s): Computer Science</p>
         <p id="editableYear">Year: 2027</p>
@@ -81,19 +84,28 @@
       <div class="rectangular-box collapsible-card">
         <div class="inner-box">
           <div class="collapsible-header"><h3>Top Interests</h3><span class="toggle-arrow">▶</span></div>
-          <div class="collapsible-content"><ul id="topInterestsList"></ul><input type="text" id="newInterest" placeholder="Add interest and hit Enter"></div>
+          <div class="collapsible-content">
+            <ul id="topInterestsList"></ul>
+            <input type="text" id="newInterest" placeholder="Add interest and hit Enter">
+          </div>
         </div>
       </div>
       <div class="rectangular-box collapsible-card">
         <div class="inner-box">
           <div class="collapsible-header"><h3>Top Artists</h3><span class="toggle-arrow">▶</span></div>
-          <div class="collapsible-content"><ul id="topArtistsList"></ul><input type="text" id="newArtist" placeholder="Add artist and hit Enter"></div>
+          <div class="collapsible-content">
+            <ul id="topArtistsList"></ul>
+            <input type="text" id="newArtist" placeholder="Add artist and hit Enter">
+          </div>
         </div>
       </div>
       <div class="rectangular-box collapsible-card">
         <div class="inner-box">
           <div class="collapsible-header"><h3>Schedule</h3><span class="toggle-arrow">▶</span></div>
-          <div class="collapsible-content"><ul id="topScheduleList"></ul><input type="text" id="newSchedule" placeholder="Add course and hit Enter"></div>
+          <div class="collapsible-content">
+            <ul id="topScheduleList"></ul>
+            <input type="text" id="newSchedule" placeholder="Add course and hit Enter">
+          </div>
         </div>
       </div>
     </div>
@@ -110,17 +122,23 @@
       <div class="matches-grid">
         <div class="match-card">
           <img src="michael.png" alt="Michael" class="match-pic">
-          <div class="match-info"><p>Name: Michael</p><p>Major: Marketing</p><p>Year: 2025</p><p>Dorm: The Quad</p></div>
+          <div class="match-info">
+            <p>Name: Michael</p><p>Major: Marketing</p><p>Year: 2025</p><p>Dorm: The Quad</p>
+          </div>
           <button class="dm-btn" onclick="location.href='chat.html?user=Michael'">DM</button>
         </div>
         <div class="match-card">
           <img src="jesse.png" alt="Jesse" class="match-pic">
-          <div class="match-info"><p>Name: Jesse</p><p>Major: Chemistry</p><p>Year: 2026</p><p>Dorm: Stouffer</p></div>
+          <div class="match-info">
+            <p>Name: Jesse</p><p>Major: Chemistry</p><p>Year: 2026</p><p>Dorm: Stouffer</p>
+          </div>
           <button class="dm-btn" onclick="location.href='chat.html?user=Jesse'">DM</button>
         </div>
         <div class="match-card">
           <img src="mark.png" alt="Mark" class="match-pic">
-          <div class="match-info"><p>Name: Mark</p><p>Major: Astrophysics</p><p>Year: 2024</p><p>Dorm: Harnwell</p></div>
+          <div class="match-info">
+            <p>Name: Mark</p><p>Major: Astrophysics</p><p>Year: 2024</p><p>Dorm: Harnwell</p>
+          </div>
           <button class="dm-btn" onclick="location.href='chat.html?user=Mark'">DM</button>
         </div>
       </div>
@@ -135,27 +153,32 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Profile editing
+      // --- 1) Persist editable profile fields ---
+      const fieldIds = [
+        'editableName',
+        'editableCollege',
+        'editableMajor',
+        'editableYear',
+        'editableDorm'
+      ];
+      const fields = fieldIds.map(id => document.getElementById(id));
 
-      // Persist Profile Picture across pages
-      const picEl = document.querySelector('.profile-pic');
-      const UPDATE_BTN = document.getElementById('updatePicBtn');
-      const PIC_KEY    = 'profilePicSrc';
-
-      // on load: if we saved a custom pic, use it
-      const savedPic = localStorage.getItem(PIC_KEY);
-      if (savedPic) picEl.src = savedPic;
-
-      // on click: swap src and save it
-      UPDATE_BTN.addEventListener('click', () => {
-        const newSrc = 'updated.png';
-        picEl.src = newSrc;
-        localStorage.setItem(PIC_KEY, newSrc);
-      });
+      function loadProfile() {
+        fields.forEach(f => {
+          const saved = localStorage.getItem(f.id);
+          if (saved !== null) {
+            f.textContent = saved;
+          }
+        });
+      }
+      function saveProfile() {
+        fields.forEach(f => {
+          localStorage.setItem(f.id, f.textContent.trim());
+        });
+      }
+      loadProfile();
 
       const editBtn = document.getElementById('editBtn');
-      const fields = ['editableName','editableCollege','editableMajor','editableYear','editableDorm']
-        .map(id => document.getElementById(id));
       let editing = false;
       editBtn.addEventListener('click', () => {
         editing = !editing;
@@ -163,14 +186,22 @@
           f.contentEditable = editing;
           f.style.border = editing ? '1px dashed #ccc' : 'none';
         });
+        if (!editing) saveProfile();
       });
 
-      // Update picture
-      document.getElementById('updatePicBtn').addEventListener('click', () => {
-        document.querySelector('.profile-pic').src = 'updated.png';
+      // --- 2) Persist profile picture ---
+      const picEl = document.querySelector('.profile-pic');
+      const UPDATE_BTN = document.getElementById('updatePicBtn');
+      const PIC_KEY = 'profilePicSrc';
+      const savedPic = localStorage.getItem(PIC_KEY);
+      if (savedPic) picEl.src = savedPic;
+      UPDATE_BTN.addEventListener('click', () => {
+        const newSrc = 'updated.png';
+        picEl.src = newSrc;
+        localStorage.setItem(PIC_KEY, newSrc);
       });
 
-      // Collapsible sections
+      // --- 3) Collapsible sections ---
       document.querySelectorAll('.collapsible-header').forEach(header => {
         header.addEventListener('click', () => {
           const content = header.nextElementSibling;
@@ -179,10 +210,11 @@
         });
       });
 
-      // Drag & drop and inputs
+      // --- 4) Drag & drop lists ---
       let dragSrc = null;
       function saveList(key, id) {
-        const arr = Array.from(document.getElementById(id).querySelectorAll('.item-text'))
+        const arr = Array.from(document.getElementById(id)
+          .querySelectorAll('.item-text'))
           .map(e => e.textContent);
         localStorage.setItem(key, JSON.stringify(arr));
       }
@@ -200,22 +232,28 @@
         };
         li.addEventListener('dragstart', e => {
           dragSrc = li;
-          e.dataTransfer.setData('text/html', li.innerHTML);
+          e.dataTransfer.effectAllowed = 'move';
         });
-        li.addEventListener('dragover', e => e.preventDefault());
+        li.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        });
         li.addEventListener('drop', e => {
-          if (dragSrc !== li) {
-            dragSrc.innerHTML = li.innerHTML;
-            li.innerHTML = e.dataTransfer.getData('text/html');
+          e.preventDefault();
+          if (dragSrc && dragSrc !== li) {
+            const parent = li.parentNode;
+            const next = (dragSrc.nextSibling === li) ? dragSrc : li;
+            parent.insertBefore(dragSrc, li);
+            parent.insertBefore(li, next);
+            saveList(key, id);
           }
-          saveList(key, id);
         });
         return li;
       }
       function loadList(id, defaults, key) {
         const list = document.getElementById(id);
         list.innerHTML = '';
-        const saved = JSON.parse(localStorage.getItem(key));
+        const saved = JSON.parse(localStorage.getItem(key) || 'null');
         (saved && saved.length ? saved : defaults)
           .forEach(item => list.appendChild(makeItem(item, key, id)));
       }
@@ -238,26 +276,22 @@
       setupInput('newArtist','topArtistsList','artists');
       setupInput('newSchedule','topScheduleList','schedule');
 
-      // OPT-IN/OUT PERSISTENCE
+      // --- 5) Opt-in/out persistence ---
       const optBtn = document.getElementById('optInBtn');
       const optText = document.getElementById('optInText');
       const OPT_KEY = 'profileOptedIn';
-
       let opted = localStorage.getItem(OPT_KEY) === 'true';
-
       function renderOpt() {
         optText.textContent =
           'New matches 4/19 7PM EST - ' +
           (opted ? 'You have opted in' : 'You have not opted in yet');
         optBtn.textContent = opted ? 'Opt Out' : 'Opt In';
       }
-
       optBtn.addEventListener('click', () => {
         opted = !opted;
         localStorage.setItem(OPT_KEY, opted);
         renderOpt();
       });
-
       renderOpt();
     });
   </script>
